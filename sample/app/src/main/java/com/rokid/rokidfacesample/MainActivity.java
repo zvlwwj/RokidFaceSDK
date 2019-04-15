@@ -9,7 +9,6 @@ import android.transition.Explode;
 import android.view.KeyEvent;
 
 import com.rokid.rokidfacesample.activity.CameraAutoRecogActivity;
-import com.rokid.rokidfacesample.activity.CameraRecogActivity;
 import com.rokid.rokidfacesample.activity.DbControlActivity;
 import com.rokid.rokidfacesample.activity.ImageActivity;
 
@@ -27,10 +26,6 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.camera_auto_recog).setOnClickListener(view -> {
             startActivity(new Intent(MainActivity.this, CameraAutoRecogActivity.class));
-        });
-
-        findViewById(R.id.camera_recog).setOnClickListener(view -> {
-            startActivity(new Intent(MainActivity.this, CameraRecogActivity.class));
         });
 
         findViewById(R.id.img_face).setOnClickListener(view ->{

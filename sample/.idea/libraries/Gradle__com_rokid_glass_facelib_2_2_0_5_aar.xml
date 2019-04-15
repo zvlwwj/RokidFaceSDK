@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Gradle: com.rokid.glass:facelib:2.2.0.5@aar">
+    <ANNOTATIONS>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/facelib-2.2.0.5.aar/db37003ad30b8794ed401795e595c8de/annotations.zip!/" />
+    </ANNOTATIONS>
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/facelib-2.2.0.5.aar/db37003ad30b8794ed401795e595c8de/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/facelib-2.2.0.5.aar/db37003ad30b8794ed401795e595c8de/jars/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.rokid.glass/facelib/2.2.0.5/6b450699c465f11af38eae6eb56f296ce0550b0a/facelib-2.2.0.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
