@@ -133,7 +133,7 @@ public class CameraAutoRecogActivity extends Activity {
     };
     private void faceTrackRecog() {
         videoFace = VideoRokidFace.create(getBaseContext(),new VideoDFaceConf().setSize(1280, 720));
-        videoFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(true));
+        videoFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(false));
 
         videoFace.startTrack(model -> {
             if(model!=null){
