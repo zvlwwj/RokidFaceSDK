@@ -2,13 +2,10 @@ package com.rokid.rokidfacesample.activity;
 
 import android.app.Activity;
 import android.graphics.Rect;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.transition.Explode;
 import android.util.Log;
@@ -17,7 +14,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.rokid.camerakit.cameralibrary.view.GLCameraView;
+import com.rokid.camerakit.cameralibrary.view.DefaultCameraView;
 import com.rokid.facelib.VideoRokidFace;
 import com.rokid.facelib.api.IVideoRokidFace;
 import com.rokid.facelib.conf.SFaceConf;
@@ -28,12 +25,6 @@ import com.rokid.facelib.utils.FaceLog;
 import com.rokid.facelib.utils.FaceRectUtils;
 import com.rokid.facelib.view.InjectFaceView;
 import com.rokid.rokidfacesample.R;
-import com.rokid.rokidfacesample.gles.CameraFrameRect;
-
-import java.nio.ByteBuffer;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 /**
  * 相机人脸跟踪+检测+识别
@@ -52,11 +43,9 @@ public class CameraAutoRecogActivity extends Activity {
     private int PREVIEW_WIDTH = WIDTH_720P;
     private int PREVIEW_HEIGHT = HEIGHT_720P;
 
-    GLCameraView cameraView;
-    private Object sync=new Object();
+    DefaultCameraView cameraView;
     IVideoRokidFace videoFace;
     InjectFaceView injectFaceView;
-    private ByteBuffer ybuf, uvbuf;
 
     private Rect roiRect;
     private Rect contentRect;
@@ -67,14 +56,11 @@ public class CameraAutoRecogActivity extends Activity {
     TextView tv_text;
     Button btn_reload;
     boolean stop;
-    CameraFrameRect cameraFrameRectVideo;
-    long crrentTime;
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        crrentTime = SystemClock.elapsedRealtime();
+
         getWindow().setEnterTransition(new Explode());
 
         setContentView(R.layout.activity_camera);
@@ -147,13 +133,12 @@ public class CameraAutoRecogActivity extends Activity {
     };
     private void faceTrackRecog() {
         videoFace = VideoRokidFace.create(getBaseContext(),new VideoDFaceConf().setSize(1280, 720));
-        videoFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(true).setTargetScore(0));
+        videoFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(true));
 
         videoFace.startTrack(model -> {
-//            if(model!=null){
-//                Log.i(TAG,"time:"+(SystemClock.elapsedRealtime()-crrentTime));
-//            }
-            Log.i(TAG,"spend:-----------end Time---------");
+            if(model!=null){
+                Log.i(TAG,"model:"+model.toString());
+            }
             injectFaceView.drawRects(model.getFaceList(),cameraView.getWidth(),cameraView.getHeight(),false);
         });
 
@@ -164,48 +149,8 @@ public class CameraAutoRecogActivity extends Activity {
     private void initCam() {
 
         cameraView.addPreviewCallBack((bytes, camera) -> {
-            synchronized (sync) {
-                if (ybuf == null || uvbuf == null) {
-                    ybuf = ByteBuffer.allocate(PREVIEW_WIDTH * PREVIEW_HEIGHT);
-                    uvbuf = ByteBuffer.allocate(PREVIEW_WIDTH * PREVIEW_HEIGHT / 2);
-                }
-                ybuf.position(0);
-                ybuf.put(bytes, 0, PREVIEW_WIDTH * PREVIEW_HEIGHT);
-                ybuf.position(0);
-
-                uvbuf.position(0);
-                uvbuf.put(bytes, PREVIEW_WIDTH * PREVIEW_HEIGHT, PREVIEW_WIDTH * PREVIEW_HEIGHT / 2);
-                uvbuf.position(0);
-            }
             if (videoFace != null&&!stop) {
-                Log.i(TAG,"spend:-----------start Time---------");
                 videoFace.setData(new VideoInput(bytes));
-            }
-        });
-        //cameraview 渲染回调
-        cameraView.addRenderer(new GLSurfaceView.Renderer() {
-            @Override
-            public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-
-            }
-
-            @Override
-            public void onSurfaceChanged(GL10 gl, int width, int height) {
-
-            }
-
-            @Override
-            public void onDrawFrame(GL10 gl) {
-                GLES20.glClearColor(0, 0, 0, 1);
-                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-                if (cameraFrameRectVideo == null) {
-                    cameraFrameRectVideo = new CameraFrameRect();
-                }
-                synchronized (sync) {
-                    if(cameraFrameRectVideo!=null&&ybuf!=null) {
-                        cameraFrameRectVideo.drawNV21ImageFull(PREVIEW_WIDTH, PREVIEW_HEIGHT, ybuf, uvbuf, false);
-                    }
-                }
             }
         });
     }
