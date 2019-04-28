@@ -85,7 +85,7 @@ public class DbControlActivity extends Activity {
 //                            Log.i(TAG,"add"+(i++));
 //                        }
                         UserInfo info = new UserInfo("安慰", "3522031989");
-                        bm = BitmapFactory.decodeFile("sdcard/安慰.jpg");
+                        bm = BitmapFactory.decodeFile("sdcard/安慰1.jpg");
                         uuid = dbCreator.add(bm, info).uuid;
 
 //                        UserInfo info = new UserInfo("鲍国春", "3522031989");
