@@ -6,17 +6,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.transition.Explode;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.rokid.camerakit.cameralibrary.view.DefaultCameraView;
 import com.rokid.facelib.VideoRokidFace;
 import com.rokid.facelib.api.IVideoRokidFace;
+import com.rokid.facelib.conf.DFaceConf;
 import com.rokid.facelib.conf.SFaceConf;
 import com.rokid.facelib.conf.VideoDFaceConf;
 import com.rokid.facelib.input.VideoInput;
@@ -25,6 +26,10 @@ import com.rokid.facelib.utils.FaceLog;
 import com.rokid.facelib.utils.FaceRectUtils;
 import com.rokid.facelib.view.InjectFaceView;
 import com.rokid.rokidfacesample.R;
+import com.rokid.rokidfacesample.gles.CameraFrameRect;
+
+import java.io.File;
+import java.nio.ByteBuffer;
 
 /**
  * 相机人脸跟踪+检测+识别
@@ -44,23 +49,32 @@ public class CameraAutoRecogActivity extends Activity {
     private int PREVIEW_HEIGHT = HEIGHT_720P;
 
     DefaultCameraView cameraView;
+
+    private Object sync=new Object();
     IVideoRokidFace videoFace;
     InjectFaceView injectFaceView;
+    private ByteBuffer ybuf, uvbuf;
 
     private Rect roiRect;
     private Rect contentRect;
 
 
     ImageView faceImage;
-    String faceInfo;
-    TextView tv_text;
     Button btn_reload;
     boolean stop;
+    CameraFrameRect cameraFrameRectVideo;
+    long crrentTime;
+    Button btn_switch_recog;
+//    Button btn_switch_roi;
+    private SFaceConf sFaceConf;
+    private DFaceConf dFaceConf;
+    boolean roi,recog;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        crrentTime = SystemClock.elapsedRealtime();
         getWindow().setEnterTransition(new Explode());
 
         setContentView(R.layout.activity_camera);
@@ -91,11 +105,13 @@ public class CameraAutoRecogActivity extends Activity {
     private void initView() {
 
         faceImage = findViewById(R.id.faceImage);
-
+        btn_switch_recog = findViewById(R.id.btn_switch_recog);
+//        btn_switch_roi = findViewById(R.id.btn_switch_roi);
         cameraView = findViewById(R.id.cameraview);
-        tv_text = findViewById(R.id.tv_text);
         btn_reload = findViewById(R.id.reload);
         injectFaceView = findViewById(R.id.injectView);
+        sFaceConf = new SFaceConf().setRecog(false, "/sdcard/facesdk/").setAutoRecog(true);
+
         findViewById(R.id.face_toggle).setOnClickListener(view -> {
             cameraView.setFace();
             roiRect = FaceRectUtils.toMirror(roiRect, cameraView.getWidth());
@@ -109,6 +125,40 @@ public class CameraAutoRecogActivity extends Activity {
                 stop = false;
             }
         });
+        btn_switch_recog.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recog = !recog;
+                File file1 = new File("/sdcard/facesdk/SearchEngine.bin");
+                File file2 = new File("/sdcard/facesdk/user.db");
+                if(recog&&(!file1.exists()||!file2.exists())){
+                    return;
+                }
+//                sFaceConf.setRecog(recog,"/sdcard/facesdk/");
+                sFaceConf.setRecog(recog,"/sdcard/user.db","/sdcard/SearchEngine.bin");
+                videoFace.sconfig(sFaceConf);
+                if(!recog){
+                    btn_switch_recog.setText("开启识别");
+                }else{
+                    btn_switch_recog.setText("关闭识别识别");
+                }
+            }
+        });
+//        btn_switch_roi.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                stop = true;
+//                roi = !roi;
+//                if(!roi){
+//                    btn_switch_roi.setText("开启ROI");
+//                    videoFace.dconfig(dFaceConf.setRoi(new Rect(0,0,1280,720)));
+//                }else{
+//                    btn_switch_roi.setText("关闭ROI");
+//                    videoFace.dconfig(dFaceConf.setRoi(roiRect));
+//                }
+//                stop = false;
+//            }
+//        });
     }
 
     private void initCase() {
@@ -132,29 +182,29 @@ public class CameraAutoRecogActivity extends Activity {
         }
     };
     private void faceTrackRecog() {
-        videoFace = VideoRokidFace.create(getBaseContext(),new VideoDFaceConf().setSize(1280, 720));
-        videoFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(false));
+        dFaceConf = new VideoDFaceConf().setSize(1280, 720);
+        videoFace = VideoRokidFace.create(getBaseContext(),dFaceConf);
+        videoFace.sconfig(sFaceConf);
 
         videoFace.startTrack(model -> {
-            if(model!=null){
-                Log.i(TAG,"model:"+model.toString());
-            }
+//            if(model!=null){
+//                Log.i(TAG,"time:"+(SystemClock.elapsedRealtime()-crrentTime));
+//            }
             injectFaceView.drawRects(model.getFaceList(),cameraView.getWidth(),cameraView.getHeight(),false);
         });
-
         initCam();
-
     }
 
     private void initCam() {
-
         cameraView.addPreviewCallBack((bytes, camera) -> {
-            if (videoFace != null&&!stop) {
-                videoFace.setData(new VideoInput(bytes));
+            synchronized (TAG){
+                if (videoFace != null&&!stop) {
+                    Log.i(TAG,"spend:-----------start Time---------");
+                    videoFace.setData(new VideoInput(bytes));
+                }
             }
         });
     }
-
 
     @Override
     protected void onResume() {
