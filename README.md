@@ -1,4 +1,4 @@
-**Version：facelib 2.2.0.4**
+**Version：facelib 2.2.1.3**
 
 ***
 ## 一. FaceSDK介绍
