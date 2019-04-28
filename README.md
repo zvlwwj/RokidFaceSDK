@@ -1,4 +1,4 @@
-**Version：facelib 2.2.0.4**
+**Version：facelib 2.2.1.3**
 
 ***
 ## 一. FaceSDK介绍
@@ -26,7 +26,7 @@ allprojects {
 在app的build.gradle中添加依赖
 ```java
 dependencies {
-    implementation 'com.rokid.glass:facelib:2.2.0.4'
+    implementation 'com.rokid.glass:facelib:2.2.1.3'
 }
 ```
 
@@ -50,6 +50,17 @@ dependencies {
 
 ## 三. 接口说明及示例
 ---
+### 3.0 人脸识别引擎初始化
+在应用的Application的onCreate方法中初始化引擎：
+**1. 人脸识别引擎初始化**
+
+```java
+CitrusFaceEngine.Init(Context context);
+```
+参数|含义
+------|---------
+context | 上下文context
+
 ### 3.1 人脸数据库操作
 #### 3.1.1 人脸数据库初始化
 人脸数据库初始化需要下面几步操作:
