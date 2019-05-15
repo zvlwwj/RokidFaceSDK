@@ -77,25 +77,25 @@ public class DbControlActivity extends Activity {
         db_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType("image/*");//相片类型
-                startActivityForResult(intent, 0);
+//                Intent intent = new Intent(Intent.ACTION_PICK);
+//                intent.setType("image/*");//相片类型
+//                startActivityForResult(intent, 0);
 
 //                mH.post(new Runnable() {
 //                    @Override
 //                    public void run() {
-//                        int i=0;
-//                        File dir = new File("/sdcard/input2");
-//                        for(File file :dir.listFiles()){
-//                            Bitmap bm = BitmapFactory.decodeFile(file.getAbsolutePath());
-//                            String name = file.getName().split("\\.")[0];
-//                            UserInfo info = new UserInfo(name,"11111111");
-//                            if(bm==null){
-//                                continue;
-//                            }
-//                            dbCreator.add(bm, info);
-//                            Log.i(TAG,"add"+(i++));
-//                        }
+                        int i=0;
+                        File dir = new File("/sdcard/input2");
+                        for(File file :dir.listFiles()){
+                            Bitmap bm = BitmapFactory.decodeFile(file.getAbsolutePath());
+                            String name = file.getName().split("\\.")[0];
+                            UserInfo info = new UserInfo(name,"11111111");
+                            if(bm==null){
+                                continue;
+                            }
+                            dbCreator.add(bm, info);
+                            Log.i(TAG,"add"+(i++));
+                        }
 //                        UserInfo info = new UserInfo("安慰", "3522031989");
 //                        bm = BitmapFactory.decodeFile("sdcard/安慰.jpg");
 //                        uuid = dbCreator.add(bm, info).uuid;
