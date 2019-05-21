@@ -67,7 +67,7 @@ public class DbControlActivity extends Activity {
                         dbCreator = new FaceDbHelper(getApplicationContext());
                         dbCreator.setModel(FaceDbHelper.MODEL_DB);
                         dbCreator.clearDb();
-                        dbCreator.configDb("user.db");
+                        dbCreator.configDb("/sdcard/facesdk");
                         Log.i(TAG,"cost Time:"+(SystemClock.elapsedRealtime()-currentTime));
                         Toast.makeText(DbControlActivity.this, "dbCreate", Toast.LENGTH_SHORT).show();
                     }

@@ -9,6 +9,5 @@ public class RokidFaceApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        CitrusFaceEngine.Init(this);
     }
 }
