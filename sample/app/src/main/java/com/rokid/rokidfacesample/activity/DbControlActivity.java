@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -19,10 +20,27 @@ import android.widget.Toast;
 
 import com.rokid.facelib.db.UserInfo;
 import com.rokid.facelib.face.FaceDbHelper;
+import com.rokid.facelib.model.FaceDO;
+import com.rokid.facelib.model.UserFace;
+import com.rokid.facelib.utils.FaceFileUtils;
+import com.rokid.facelib.utils.FaceRectUtils;
 import com.rokid.rokidfacesample.R;
+import com.rokid.rokidfacesample.RokidConfig;
+import com.rokid.rokidfacesample.sdk.db.FaceMapping;
+import com.rokid.rokidfacesample.sdk.db.FaceMappingDatabase;
+import com.rokid.rokidfacesample.sdk.utils.FileUtils;
+import com.rokid.rokidfacesample.sdk.utils.ImageUtils;
+import com.rokid.rokidfacesample.sdk.utils.UUIDUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class DbControlActivity extends Activity {
     private static final String TAG = "DbControlActivity";
@@ -34,6 +52,7 @@ public class DbControlActivity extends Activity {
     private Button db_update;
     private Bitmap bm;
     private AlertDialog dialog;
+    private FaceMappingDatabase fmd;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -68,6 +87,9 @@ public class DbControlActivity extends Activity {
                         dbCreator.setModel(FaceDbHelper.MODEL_DB);
                         dbCreator.clearDb();
                         dbCreator.configDb("/sdcard/facesdk");
+
+                        fmd = FaceMappingDatabase.create(getApplicationContext(), "facemapping.db");
+
                         Log.i(TAG,"cost Time:"+(SystemClock.elapsedRealtime()-currentTime));
                         Toast.makeText(DbControlActivity.this, "dbCreate", Toast.LENGTH_SHORT).show();
                     }
@@ -77,34 +99,114 @@ public class DbControlActivity extends Activity {
         db_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent intent = new Intent(Intent.ACTION_PICK);
-//                intent.setType("image/*");//相片类型
-//                startActivityForResult(intent, 0);
-
-//                mH.post(new Runnable() {
-//                    @Override
-//                    public void run() {
+                mH.post(new Runnable() {
+                    @Override
+                    public void run() {
                         int i=0;
-                        File dir = new File("/sdcard/input2");
-                        for(File file :dir.listFiles()){
-                            Bitmap bm = BitmapFactory.decodeFile(file.getAbsolutePath());
-                            String name = file.getName().split("\\.")[0];
-                            UserInfo info = new UserInfo(name,"11111111");
-                            if(bm==null){
+                        File dir = new File("/sdcard/faceid"); //faceid
+                        int count = 0;
+                        for(File file : dir.listFiles()){
+                            Bitmap photo = BitmapFactory.decodeFile(file.getAbsolutePath());
+                            if(photo==null || photo.isRecycled()){
                                 continue;
                             }
-                            dbCreator.add(bm, info);
-                            Log.i(TAG,"add"+(i++));
-                        }
-//                        UserInfo info = new UserInfo("安慰", "3522031989");
-//                        bm = BitmapFactory.decodeFile("sdcard/安慰.jpg");
-//                        uuid = dbCreator.add(bm, info).uuid;
 
-//                        UserInfo info = new UserInfo("鲍国春", "3522031989");
-//                        Bitmap bm = BitmapFactory.decodeFile("sdcard/鲍国春.png");
-//                        uuid = dbCreator.add(bm, info).uuid;
-//                    }
-//                });
+                            String fileName = FileUtils.getFileNameNoEx(file.getName());
+                            UserInfo info = new UserInfo();
+                            if(fileName.contains("#")){
+                                String[] infos = fileName.split("#");
+                                info.name = infos[0];
+                                info.checkcode = infos[1];
+                            }
+                            else {
+                                info.name = fileName;
+                                info.checkcode = " ";
+                            }
+                            UserFace userFace = dbCreator.addRetrunUserFace(photo, info);
+
+                            if (userFace == null || userFace.faceDO == null || userFace.userInfo == null) {
+                                Log.e("zhf_face","RokidHttp ##### 批量添加"+fileName+"出错啦, 检测不到人脸");
+                                continue;
+                            }
+
+                            FaceDO faceDO = userFace.faceDO;
+                            Rect srcRect = faceDO.toRect(photo.getWidth(), photo.getHeight());
+                            Log.d("zhf_face","RokidHttp ##### 批量 fileName="+file.getAbsolutePath()
+                                    +", count="+(count++)+", faceDO srcRect="+srcRect);
+
+
+                            Rect dstRect = FaceRectUtils.toRect(
+                                    srcRect, 1, photo.getWidth(), photo.getHeight());
+                            int left = dstRect.left;
+                            int top = dstRect.top;
+                            int right = dstRect.right;
+                            int bottom = dstRect.bottom;
+//
+//                            int width = right - left, height = bottom - top;
+//                            int centerX = left + width / 2, centerY = top + height / 2;
+//                            int diameter = width > height ? width : height;
+//                            left = centerX - diameter * 2 / 3;
+//                            if (left < 0) left = 0;
+//                            right = centerX + diameter * 2 / 3;
+//                            if (right > photo.getWidth()) right = photo.getWidth();
+//                            top = centerY - diameter;
+//                            if (top < 0) top = 0;
+//                            bottom = centerY + diameter;
+//                            if (bottom > photo.getHeight()) bottom = photo.getHeight();
+
+                            int width = right - left, height = bottom - top;
+                            int centerX = left + width / 2, centerY = top + height / 2;
+                            int diameter = width > height ? width : height;
+
+                            //人脸框放到系数，尽可能保证抠出来的小图宽高相等
+                            float scaleFactor = 1.2f;
+                            float side = diameter * scaleFactor;
+                            int radius = (int)(side / 2);
+
+                            left = centerX - radius;
+                            if (left < 0) left = 0;
+                            right = centerX + radius;
+                            if (right > photo.getWidth()) right = photo.getWidth();
+                            top = centerY - radius;
+                            if (top < 0) top = 0;
+                            bottom = centerY + radius;
+                            if (bottom > photo.getHeight()) bottom = photo.getHeight();
+
+                            Bitmap cropBitmap = Bitmap.createBitmap(photo, left, top, right - left, bottom - top);
+                            if(cropBitmap ==null){
+                                Log.e("zhf_face","RokidHttp ##### 裁剪"+fileName+"出错啦");
+                                continue;
+                            }
+
+                            FaceMapping mapping = new FaceMapping();
+                            mapping.uid = UUIDUtils.generateUUID();
+                            mapping.uuid = userFace.userInfo.uuid;
+                            mapping.faceImg = ImageUtils.Bitmap2Bytes(cropBitmap);
+                            mapping.isCover = true;
+                            Log.d("zhf_face","add"+(i++)+", getName()="+file.getName()+", faceImg.length="+mapping.faceImg.length);
+                            fmd.faceMappingDao().addFaceMapping(mapping);
+                        }
+
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        Log.d("zhf_face","开始拷贝");
+                        dbCreator.save();
+                        Log.d("zhf_face","开始压缩");
+                        zipDatabase();
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "添加完成", Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                    }
+                });
             }
         });
 
@@ -185,5 +287,99 @@ public class DbControlActivity extends Activity {
                 dialog.dismiss();
             }
         });
+    }
+	
+	
+	
+
+    public boolean zipDatabase() {
+        boolean result = true;
+
+        File dbMappingFile = new File(getApplication().getDatabasePath(RokidConfig.Face.FACE_MAPPING_DB).getAbsolutePath());//new File("/data/data/com.rokid.test/databases/user.db");
+
+        File userDbFile = new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_USR_DB);
+        File facingDbFile = new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_MAPPING_DB);
+
+        try {
+            if (facingDbFile.exists()) {
+                facingDbFile.delete();
+            }
+            FaceFileUtils.copyFileByChannel(dbMappingFile, facingDbFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = false;
+        }
+
+
+        List<File> srcFiles = Arrays.asList(userDbFile, facingDbFile,
+                new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_SEARCH_ENGINE),
+                new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_FEATURE_DB));
+
+        File zipFile = new File(RokidConfig.Face.ZIP_FILE_PATH);
+
+        if (zipFile.exists()) {
+            zipFile.delete();
+        }
+
+        try {
+            zipFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = false;
+        }
+
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(zipFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            result = false;
+        }
+
+        ZipOutputStream zipOut = new ZipOutputStream(fout);
+        for (File fileToZip : srcFiles) {
+            if (!fileToZip.exists()) {
+                continue;
+            }
+
+            FileInputStream fin = null;
+            try {
+                fin = new FileInputStream(fileToZip);
+//                ZipEntry zipEntry = new ZipEntry("update_" + fileToZip.getName());
+                ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+                try {
+                    zipOut.putNextEntry(zipEntry);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    result = false;
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                result = false;
+            }
+
+            if (fin != null) {
+                try {
+                    byte[] bytes = new byte[1024];
+                    int length;
+                    while ((length = fin.read(bytes)) >= 0) {
+                        zipOut.write(bytes, 0, length);
+                    }
+                    fin.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    result = false;
+                }
+            }
+        }
+        try {
+            zipOut.close();
+            fout.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = false;
+        }
+
+        return result;
     }
 }
