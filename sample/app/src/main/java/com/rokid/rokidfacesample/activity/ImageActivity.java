@@ -7,29 +7,46 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.rokid.facelib.ImageRokidFace;
 import com.rokid.facelib.api.IImageRokidFace;
+import com.rokid.facelib.conf.DFaceConf;
 import com.rokid.facelib.conf.SFaceConf;
 import com.rokid.facelib.input.BitmapInput;
 import com.rokid.facelib.model.FaceDO;
+import com.rokid.facelib.model.FaceModel;
 import com.rokid.facelib.utils.FaceLog;
 import com.rokid.rokidfacesample.R;
+import com.rokid.rokidfacesample.view.FaceModelView;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class ImageActivity extends Activity {
     private Button btn_sel;
     private TextView tv_text;
     IImageRokidFace imageFace;
+    ImageView iv_bm;
+    FaceModelView faceModelView;
     private static final String TAG = "ImageActivity";
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.img_activity);
+        iv_bm = findViewById(R.id.iv_bm);
+
+        faceModelView = findViewById(R.id.faceModelView);
         imageFace = ImageRokidFace.create(getBaseContext());
-        imageFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/").setAutoRecog(true));
+        imageFace.dconfig(new DFaceConf());
+        imageFace.sconfig(new SFaceConf().setRecog(true, "/sdcard/facesdk/"));
         btn_sel = findViewById(R.id.btn_sel);
         tv_text = findViewById(R.id.tv_text);
         btn_sel.setOnClickListener(new View.OnClickListener() {
@@ -48,23 +65,28 @@ public class ImageActivity extends Activity {
         try {
             Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(data.getData()));
             FaceLog.d(TAG, "pic " + bitmap.getWidth() + " " + bitmap.getHeight());
+            iv_bm.setImageBitmap(bitmap);
 
             imageFace.setImageFaceCallback(new BitmapInput(bitmap), model -> {
                 FaceDO faceDO = model.getFaceList().get(0);
                 StringBuilder sb = new StringBuilder();
-                if (faceDO.userInfo != null) {
-                    sb.append("faceDO.userInfo.name:" + faceDO.userInfo.name);
+                if(faceDO != null){
+                    if (faceDO.featid != null) {
+                        sb.append("faceDO.featid:" + faceDO.featid);
+                    }
+                    if (faceDO.pose != null) {
+                        sb.append("\n pose:" + faceDO.pose[0] + "," + faceDO.pose[1] + "," + faceDO.pose[2] + "," + faceDO.pose[3]);
+                    }
+                    Rect rect = faceDO.toRect(bitmap.getWidth(), bitmap.getHeight());
+                    if (rect != null) {
+                        sb.append("\n rect:" + rect.left + "," + rect.top + "," + rect.right + "," + rect.bottom);
+                    }
+                    if(faceDO.sharpness!=0){
+                        sb.append("\n sharpness:" + faceDO.sharpness);
+                    }
+                    sb.append("\n size:" + model.size());
                 }
-                if (faceDO.pose != null) {
-                    sb.append("\n pose:" + faceDO.pose[0] + "," + faceDO.pose[1] + "," + faceDO.pose[2] + "," + faceDO.pose[3]);
-                }
-                Rect rect = faceDO.toRect(bitmap.getWidth(), bitmap.getHeight());
-                if (rect != null) {
-                    sb.append("\n rect:" + rect.left + "," + rect.top + "," + rect.right + "," + rect.bottom);
-                }
-                if(faceDO.sharpness!=0){
-                    sb.append("\n sharpness:" + faceDO.sharpness);
-                }
+                faceModelView.setFaceModel(model);
                 tv_text.setText(sb.toString());
             });
         } catch (Exception e) {

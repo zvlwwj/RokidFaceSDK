@@ -1,58 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <LinearLayout
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <Button
+        android:id="@+id/db_create"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:padding="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_create" />
 
-        <Button
-            android:id="@+id/db_create"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_create" />
+    <Button
+        android:id="@+id/db_add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_create"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_add" />
 
-        <Button
-            android:id="@+id/db_add"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_add" />
+    <Button
+        android:id="@+id/db_query"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_add"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_query" />
 
-        <Button
-            android:id="@+id/db_query"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_query" />
+    <Button
+        android:id="@+id/db_remove"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_query"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_remove" />
 
-        <Button
-            android:id="@+id/db_remove"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_remove" />
+    <Button android:id="@+id/db_update"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_remove"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_update"/>
 
-        <Button android:id="@+id/db_update"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_update"/>
+    <Button
+        android:id="@+id/db_save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_update"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_save" />
 
-        <Button
-            android:id="@+id/db_save"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_save" />
-
-        <Button
-            android:id="@+id/db_clear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_clear" />
-    </LinearLayout>
-</FrameLayout>
+    <Button
+        android:id="@+id/db_clear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_save"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_clear" />
+    <Button
+        android:id="@+id/db_export"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/db_clear"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="db_export"/>
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/db_export"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:visibility="visible"/>
+</android.support.constraint.ConstraintLayout>

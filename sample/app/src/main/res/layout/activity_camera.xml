@@ -3,11 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <ImageView android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/iv_test"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"/>
+
     <com.rokid.camerakit.cameralibrary.view.DefaultCameraView
         android:id="@+id/cameraview"
         app:layout_constraintTop_toTopOf="parent"
@@ -17,41 +13,16 @@
         app:preivewWidth="1280"
         app:preivewHeight="720"
         android:layout_width="0dp"
-        android:layout_height="0dp">
+        android:layout_height="0dp"/>
 
-        <com.rokid.facelib.view.InjectFaceView
-            android:id="@+id/injectView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </com.rokid.camerakit.cameralibrary.view.DefaultCameraView>
-
-    <FrameLayout
-        android:id="@+id/focus_rect_layout"
-        app:layout_constraintTop_toTopOf="parent"
+    <com.rokid.rokidfacesample.view.FaceModelView android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_marginLeft="80dp">
-        <View
-            android:id="@+id/focus_rect"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/shape_rect_blue_bg" />
-        <ImageView
-            android:id="@+id/faceImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY"/>
-    </FrameLayout>
-
-    <!--<TextView android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:text="识别"-->
-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
-        <!--app:layout_constraintTop_toTopOf="parent"-->
-        <!--android:id="@+id/tv_recog"-->
-        <!--/>-->
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/faceModelView"
+        />
     <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
@@ -59,37 +30,4 @@
         app:layout_constraintRight_toRightOf="parent"
         android:text="开启识别"
         android:id="@+id/btn_switch_recog"/>
-
-    <!--<TextView android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:text="ROI区域"-->
-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
-        <!--app:layout_constraintTop_toTopOf="parent"-->
-        <!--android:id="@+id/tv_roi"-->
-        <!--/>-->
-    <Button android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/btn_switch_recog"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:text="开启ROI"
-        android:id="@+id/btn_switch_roi"
-        android:visibility="gone"/>
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|center_vertical"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:id="@+id/face_toggle"
-        android:text="face_toggle" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:id="@+id/reload"
-        android:text="reload" />
 </android.support.constraint.ConstraintLayout>

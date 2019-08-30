@@ -15,25 +15,35 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.rokid.facelib.db.UserInfo;
 import com.rokid.facelib.face.FaceDbHelper;
+import com.rokid.facelib.utils.FaceFileUtils;
 import com.rokid.rokidfacesample.R;
+import com.rokid.rokidfacesample.userdb.UserDatabase;
+import com.rokid.rokidfacesample.userdb.UserInfo;
+import com.rokid.rokidfacesample.userdb.UserInfoDao;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import static com.rokid.facelib.face.FaceDbHelper.PATH_OUTPUT;
 
 public class DbControlActivity extends Activity {
     private static final String TAG = "DbControlActivity";
-    private Button db_add, db_remove, db_save, db_clear, db_create,db_query;
+    private Button db_add, db_remove, db_save, db_clear, db_create,db_query,db_export;
     private Handler mH;
     private HandlerThread mT;
-    private FaceDbHelper dbCreator;
+    private FaceDbHelper faceDbHelper;
     private String uuid;
     private Button db_update;
-    private Bitmap bm;
     private AlertDialog dialog;
+    private UserDatabase userDatabase;
+    private UserInfoDao userDao;
+    private ProgressBar progressBar;
+    private static final String USER_DB_NAME = "user.db";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,6 +54,15 @@ public class DbControlActivity extends Activity {
         mH = new Handler(mT.getLooper());
         initView();
         setListener();
+        initUserDb();
+    }
+
+    /**
+     * 初始化人脸信息数据库
+     */
+    private void initUserDb() {
+        userDatabase = UserDatabase.create(this, USER_DB_NAME);
+        userDao = userDatabase.getUserInfoDao();
     }
 
     private void initView() {
@@ -54,8 +73,19 @@ public class DbControlActivity extends Activity {
         db_clear = findViewById(R.id.db_clear);
         db_create = findViewById(R.id.db_create);
         db_update = findViewById(R.id.db_update);
+        db_export = findViewById(R.id.db_export);
+        progressBar = findViewById(R.id.progressBar);
+        File dir = new File("/sdcard/input/");
+        if(!dir.exists()){
+            dir.mkdirs();
+        }
+        if(dir.list()!=null) {
+            progressBar.setMax(dir.list().length);
+        }else{
+            Toast.makeText(this,"请在/sdcard/input文件夹下放入待识别图片",Toast.LENGTH_LONG).show();
+        }
     }
-
+    int i=0;
     private void setListener() {
         db_create.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,10 +94,11 @@ public class DbControlActivity extends Activity {
                     @Override
                     public void run() {
                         long currentTime = SystemClock.elapsedRealtime();
-                        dbCreator = new FaceDbHelper(getApplicationContext());
-                        dbCreator.setModel(FaceDbHelper.MODEL_DB);
-                        dbCreator.clearDb();
-                        dbCreator.configDb("/sdcard/facesdk");
+                        faceDbHelper = new FaceDbHelper(getApplicationContext());
+                        //清空之前的数据库
+                        faceDbHelper.clearDb();
+                        //创建数据库
+                        faceDbHelper.createDb();
                         Log.i(TAG,"cost Time:"+(SystemClock.elapsedRealtime()-currentTime));
                         Toast.makeText(DbControlActivity.this, "dbCreate", Toast.LENGTH_SHORT).show();
                     }
@@ -77,15 +108,12 @@ public class DbControlActivity extends Activity {
         db_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent intent = new Intent(Intent.ACTION_PICK);
-//                intent.setType("image/*");//相片类型
-//                startActivityForResult(intent, 0);
+                Toast.makeText(DbControlActivity.this,"正在添加人脸数据库",Toast.LENGTH_LONG).show();
+                new Thread(){
+                    @Override
+                    public void run() {
 
-//                mH.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-                        int i=0;
-                        File dir = new File("/sdcard/input2");
+                        File dir = new File("/sdcard/input/");
                         for(File file :dir.listFiles()){
                             Bitmap bm = BitmapFactory.decodeFile(file.getAbsolutePath());
                             String name = file.getName().split("\\.")[0];
@@ -93,25 +121,40 @@ public class DbControlActivity extends Activity {
                             if(bm==null){
                                 continue;
                             }
-                            dbCreator.add(bm, info);
-                            Log.i(TAG,"add"+(i++));
-                        }
-//                        UserInfo info = new UserInfo("安慰", "3522031989");
-//                        bm = BitmapFactory.decodeFile("sdcard/安慰.jpg");
-//                        uuid = dbCreator.add(bm, info).uuid;
+                            //添加人脸数据，返回的featId是图片人脸特征值唯一识别号
+                            String featId = faceDbHelper.add(bm);
+                            if(featId!=null){
+                                //将该featId所对应的用户信息，添加到人脸信息数据库
+                                Log.i(TAG,"add "+name+(i)+" success");
+                                info.uuid = featId;
+                                userDao.addUserInfo(info);
+                                uuid = info.uuid;
+                            }else{
+                                Log.i(TAG,"add "+name+(i)+" fail");
+                            }
+                            mH.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressBar.setProgress(i);
+                                    i++;
+                                    if(i == progressBar.getMax()-1){
+                                        Toast.makeText(DbControlActivity.this,"人脸数据库添加完成",Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                            });
 
-//                        UserInfo info = new UserInfo("鲍国春", "3522031989");
-//                        Bitmap bm = BitmapFactory.decodeFile("sdcard/鲍国春.png");
-//                        uuid = dbCreator.add(bm, info).uuid;
-//                    }
-//                });
+                        }
+
+                    }
+                }.start();
             }
         });
 
         db_query.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String name = dbCreator.query(uuid).name;
+                //在人脸信息库中查询人脸信息
+                String name = userDao.getUserInfo(uuid).name;
                 Log.i(TAG,"name:"+name);
             }
         });
@@ -119,33 +162,51 @@ public class DbControlActivity extends Activity {
         db_update.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //在人脸信息库中更新人脸信息
                 UserInfo info = new UserInfo("anwei", "3522031989");
                 info.uuid = uuid;
-                dbCreator.update(bm,info);
+                userDao.updateUserInfo(info);
             }
         });
         db_remove.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mH.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        dbCreator.remove(uuid);
-                    }
-                });
+                //在人脸信息库中删除人脸信息
+                UserInfo userInfo = userDao.getUserInfo(uuid);
+                userDao.removeUserInfo(userInfo);
+                faceDbHelper.remove(uuid);
             }
         });
         db_save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dbCreator.save();
+                //保存添加的人脸特征，生成的文件为"SearchEngine.bin"，保存在"/sdcard/facesdk"目录下
+                faceDbHelper.save();
                 Toast.makeText(DbControlActivity.this,"已保存",Toast.LENGTH_SHORT).show();
             }
         });
         db_clear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dbCreator.clearDb();
+                //清除人脸特征数据库和"SearchEngine.bin"文件
+                faceDbHelper.clearDb();
+            }
+        });
+        db_export.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //将feat.db数据库导出到/sdcard/facesdk/文件夹下
+                faceDbHelper.exportFeatDb();
+                File featDbFile = new File(getDatabasePath(USER_DB_NAME).getAbsolutePath());
+                try {
+                    File file = new File(PATH_OUTPUT);
+                    if(!file.exists()){
+                        file.mkdirs();
+                    }
+                    FaceFileUtils.copyFileByChannel(featDbFile, new File(PATH_OUTPUT +File.separator+ USER_DB_NAME));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -174,16 +235,17 @@ public class DbControlActivity extends Activity {
             public void onClick(View v) {
                 String name = et_name.getText().toString();
                 UserInfo info = new UserInfo(name, "3522031989");
-                if( dbCreator.add(bm, info)!=null){
-                    uuid = dbCreator.add(bm, info).uuid;
-                    Toast.makeText(DbControlActivity.this,name+"已添加",Toast.LENGTH_SHORT).show();
-                }else{
-                    Toast.makeText(DbControlActivity.this,name+"没有检测到人脸",Toast.LENGTH_SHORT).show();
-                }
-
-
+                uuid = faceDbHelper.add(bm);
+                info.uuid = uuid;
+                Toast.makeText(DbControlActivity.this,name+"已添加",Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        mT.quit();
+        super.onDestroy();
     }
 }
