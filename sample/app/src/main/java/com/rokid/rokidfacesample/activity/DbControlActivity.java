@@ -125,13 +125,13 @@ public class DbControlActivity extends Activity {
                             UserFace userFace = dbCreator.addRetrunUserFace(photo, info);
 
                             if (userFace == null || userFace.faceDO == null || userFace.userInfo == null) {
-                                Log.e("zhf_face","RokidHttp ##### 批量添加"+fileName+"出错啦, 检测不到人脸");
+                                Log.e("zhf_face","RokidHttp ##### 批量添加: "+fileName+" 出错啦, 检测不到人脸");
                                 continue;
                             }
 
                             FaceDO faceDO = userFace.faceDO;
                             Rect srcRect = faceDO.toRect(photo.getWidth(), photo.getHeight());
-                            Log.d("zhf_face","RokidHttp ##### 批量 fileName="+file.getAbsolutePath()
+                            Log.d("zhf_face","RokidHttp ##### 批量 fileName= "+file.getAbsolutePath()
                                     +", count="+(count++)+", faceDO srcRect="+srcRect);
 
 
@@ -174,7 +174,7 @@ public class DbControlActivity extends Activity {
 
                             Bitmap cropBitmap = Bitmap.createBitmap(photo, left, top, right - left, bottom - top);
                             if(cropBitmap ==null){
-                                Log.e("zhf_face","RokidHttp ##### 裁剪"+fileName+"出错啦");
+                                Log.e("zhf_face","RokidHttp ##### 裁剪: "+fileName+"出错啦");
                                 continue;
                             }
 
@@ -185,6 +185,15 @@ public class DbControlActivity extends Activity {
                             mapping.isCover = true;
                             Log.d("zhf_face","add"+(i++)+", getName()="+file.getName()+", faceImg.length="+mapping.faceImg.length);
                             fmd.faceMappingDao().addFaceMapping(mapping);
+
+                            if (photo != null) {
+                                photo.recycle();
+                                photo = null;
+                            }
+                            if (cropBitmap != null) {
+                                cropBitmap.recycle();
+                                cropBitmap = null;
+                            }
                         }
 
                         try {
