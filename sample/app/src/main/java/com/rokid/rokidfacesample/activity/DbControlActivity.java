@@ -5,7 +5,9 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.media.ExifInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -75,6 +77,36 @@ public class DbControlActivity extends Activity {
         db_update = findViewById(R.id.db_update);
     }
 
+    public static Bitmap getRotateBitmap(String imagePath) {
+        Bitmap photo = BitmapFactory.decodeFile(imagePath);
+        int rotation = 0;
+        try {
+            ExifInterface exifInterface = new ExifInterface(imagePath);
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    rotation = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    rotation = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    rotation = 270;
+                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (rotation == 0) {
+            return photo;
+        } else {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+            return Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
+        }
+    }
+
+
     private void setListener() {
         db_create.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,7 +138,8 @@ public class DbControlActivity extends Activity {
                         File dir = new File("/sdcard/faceid"); //faceid
                         int count = 0;
                         for(File file : dir.listFiles()){
-                            Bitmap photo = BitmapFactory.decodeFile(file.getAbsolutePath());
+                            Bitmap photo = getRotateBitmap(file.getAbsolutePath());
+//                            Bitmap photo = BitmapFactory.decodeFile(file.getAbsolutePath());
                             if(photo==null || photo.isRecycled()){
                                 continue;
                             }
