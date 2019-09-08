@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.rokid.facelib.db.UserInfo;
@@ -44,6 +45,8 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.rokid.facelib.face.FaceDbHelper.PATH_OUTPUT;
+
 public class DbControlActivity extends Activity {
     private static final String TAG = "DbControlActivity";
     private Button db_add, db_remove, db_save, db_clear, db_create,db_query;
@@ -55,6 +58,8 @@ public class DbControlActivity extends Activity {
     private Bitmap bm;
     private AlertDialog dialog;
     private FaceMappingDatabase fmd;
+
+    private TextView mResultTv;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,6 +80,8 @@ public class DbControlActivity extends Activity {
         db_clear = findViewById(R.id.db_clear);
         db_create = findViewById(R.id.db_create);
         db_update = findViewById(R.id.db_update);
+
+        mResultTv = findViewById(R.id.db_result_text);
     }
 
     public static Bitmap getRotateBitmap(String imagePath) {
@@ -114,6 +121,12 @@ public class DbControlActivity extends Activity {
                 mH.post(new Runnable() {
                     @Override
                     public void run() {
+                        File sdkDir = new File(PATH_OUTPUT);
+                        if (sdkDir!=null && sdkDir.isDirectory() && sdkDir.exists()) {
+                            FileUtils.deleteDir(sdkDir);
+                            sdkDir.mkdir();
+                        }
+
                         long currentTime = SystemClock.elapsedRealtime();
                         dbCreator = new FaceDbHelper(getApplicationContext());
                         dbCreator.setModel(FaceDbHelper.MODEL_DB);
@@ -134,12 +147,13 @@ public class DbControlActivity extends Activity {
                 mH.post(new Runnable() {
                     @Override
                     public void run() {
-                        int i=0;
+                        int success = 0;
+                        int error = 0;
                         File dir = new File("/sdcard/faceid"); //faceid
                         int count = 0;
+                        final int file_count = dir.listFiles().length;
                         for(File file : dir.listFiles()){
                             Bitmap photo = getRotateBitmap(file.getAbsolutePath());
-//                            Bitmap photo = BitmapFactory.decodeFile(file.getAbsolutePath());
                             if(photo==null || photo.isRecycled()){
                                 continue;
                             }
@@ -158,6 +172,7 @@ public class DbControlActivity extends Activity {
                             UserFace userFace = dbCreator.addRetrunUserFace(photo, info);
 
                             if (userFace == null || userFace.faceDO == null || userFace.userInfo == null) {
+                                error++;
                                 Log.e("zhf_face","RokidHttp ##### 批量添加: "+fileName+" 出错啦, 检测不到人脸");
                                 continue;
                             }
@@ -166,7 +181,6 @@ public class DbControlActivity extends Activity {
                             Rect srcRect = faceDO.toRect(photo.getWidth(), photo.getHeight());
                             Log.d("zhf_face","RokidHttp ##### 批量 fileName= "+file.getAbsolutePath()
                                     +", count="+(count++)+", faceDO srcRect="+srcRect);
-
 
                             Rect dstRect = FaceRectUtils.toRect(
                                     srcRect, 1, photo.getWidth(), photo.getHeight());
@@ -207,6 +221,7 @@ public class DbControlActivity extends Activity {
 
                             Bitmap cropBitmap = Bitmap.createBitmap(photo, left, top, right - left, bottom - top);
                             if(cropBitmap ==null){
+                                error++;
                                 Log.e("zhf_face","RokidHttp ##### 裁剪: "+fileName+"出错啦");
                                 continue;
                             }
@@ -216,7 +231,7 @@ public class DbControlActivity extends Activity {
                             mapping.uuid = userFace.userInfo.uuid;
                             mapping.faceImg = ImageUtils.Bitmap2Bytes(cropBitmap);
                             mapping.isCover = true;
-                            Log.d("zhf_face","add"+(i++)+", getName()="+file.getName()+", faceImg.length="+mapping.faceImg.length);
+                            //Log.d("zhf_face","add"+(i++)+", getName()="+file.getName()+", faceImg.length="+mapping.faceImg.length);
                             fmd.faceMappingDao().addFaceMapping(mapping);
 
                             if (photo != null) {
@@ -227,6 +242,15 @@ public class DbControlActivity extends Activity {
                                 cropBitmap.recycle();
                                 cropBitmap = null;
                             }
+                            success++;
+
+                            final int process = count;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mResultTv.setText("正在添加中....请稍后, ("+process+"/"+file_count+")");
+                                }
+                            });
                         }
 
                         try {
@@ -240,10 +264,12 @@ public class DbControlActivity extends Activity {
                         Log.d("zhf_face","开始压缩");
                         zipDatabase();
 
+                        final int done_success = success;
+                        final int done_error = error;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(getApplicationContext(), "添加完成", Toast.LENGTH_LONG).show();
+                                mResultTv.setText("添加完成，成功: "+done_success+", 失败: "+done_error);
                             }
                         });
 
@@ -339,8 +365,8 @@ public class DbControlActivity extends Activity {
 
         File dbMappingFile = new File(getApplication().getDatabasePath(RokidConfig.Face.FACE_MAPPING_DB).getAbsolutePath());//new File("/data/data/com.rokid.test/databases/user.db");
 
-        File userDbFile = new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_USR_DB);
-        File facingDbFile = new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_MAPPING_DB);
+        File userDbFile = new File(PATH_OUTPUT + RokidConfig.Face.FACE_USR_DB);
+        File facingDbFile = new File(PATH_OUTPUT + RokidConfig.Face.FACE_MAPPING_DB);
 
         try {
             if (facingDbFile.exists()) {
@@ -354,8 +380,8 @@ public class DbControlActivity extends Activity {
 
 
         List<File> srcFiles = Arrays.asList(userDbFile, facingDbFile,
-                new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_SEARCH_ENGINE),
-                new File(FaceDbHelper.PATH_OUTPUT + RokidConfig.Face.FACE_FEATURE_DB));
+                new File(PATH_OUTPUT + RokidConfig.Face.FACE_SEARCH_ENGINE),
+                new File(PATH_OUTPUT + RokidConfig.Face.FACE_FEATURE_DB));
 
         File zipFile = new File(RokidConfig.Face.ZIP_FILE_PATH);
 
