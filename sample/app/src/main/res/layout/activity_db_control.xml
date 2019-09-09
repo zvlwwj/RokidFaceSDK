@@ -1,67 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <LinearLayout
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/db_create"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:text="db_create" />
+
+    <Button
+        android:id="@+id/db_add"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:text="db_add" />
+
+    <Button
+        android:id="@+id/db_query"
+        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:padding="10dp"
+        android:text="db_query" />
 
-        <Button
-            android:id="@+id/db_create"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_create" />
+    <Button
+        android:id="@+id/db_remove"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="db_remove" />
 
-        <Button
-            android:id="@+id/db_add"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_add" />
+    <Button android:id="@+id/db_update"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="db_update"/>
 
-        <Button
-            android:id="@+id/db_query"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_query" />
+    <Button
+        android:id="@+id/db_save"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="db_save" />
 
-        <Button
-            android:id="@+id/db_remove"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_remove" />
+    <Button
+        android:id="@+id/db_clear"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="db_clear" />
 
-        <Button android:id="@+id/db_update"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_update"/>
+    <TextView
+        android:layout_marginTop="20dp"
+        android:id="@+id/db_result_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:textSize="20dp"
+        android:text="添加结果" />
 
-        <Button
-            android:id="@+id/db_save"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_save" />
-
-        <Button
-            android:id="@+id/db_clear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="db_clear" />
-
-        <TextView
-            android:layout_marginTop="20dp"
-            android:id="@+id/db_result_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="添加结果" />
-
-    </LinearLayout>
-</FrameLayout>
+    <TextView
+        android:layout_marginTop="60dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:singleLine="false"
+        android:text="
+1. 把图片放在/sdcard/faceid目录 \n
+2. 先执行DB_CREATE, 在点击DB_ADD \n
+3. 生成的数据库存放在/sdcard/facesdk \n
+4. 把facesdk下所有的文件push到任意眼镜的以下2个目录, 然后重启生效: \n
+/sdcard/facesdk \n
+/data/data/com.rokid.activation/databases \n
+5. 注意，文件数量请小于1W张"/>
+</LinearLayout>

@@ -246,4 +246,22 @@ public class FileUtils {
         return filename;
     }
 
+    /**
+     * 删除一个目录（可以是非空目录）
+     * @param dir 目录绝对路径
+     */
+    public static boolean deleteDirection(File dir) {
+        if (dir == null || !dir.exists() || dir.isFile()) {
+            return false;
+        }
+        for (File file : dir.listFiles()) {
+            if (file.isFile()) {
+                file.delete();
+            } else if (file.isDirectory()) {
+                deleteDirection(file);//递归
+            }
+        }
+        dir.delete();
+        return true;
+    }
 }

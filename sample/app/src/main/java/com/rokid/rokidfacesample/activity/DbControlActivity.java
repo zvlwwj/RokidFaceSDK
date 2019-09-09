@@ -47,6 +47,8 @@ import java.util.zip.ZipOutputStream;
 
 import static com.rokid.facelib.face.FaceDbHelper.PATH_OUTPUT;
 
+
+// 注意，这个版本人脸数要小于1W
 public class DbControlActivity extends Activity {
     private static final String TAG = "DbControlActivity";
     private Button db_add, db_remove, db_save, db_clear, db_create,db_query;
@@ -121,11 +123,7 @@ public class DbControlActivity extends Activity {
                 mH.post(new Runnable() {
                     @Override
                     public void run() {
-                        File sdkDir = new File(PATH_OUTPUT);
-                        if (sdkDir!=null && sdkDir.isDirectory() && sdkDir.exists()) {
-                            FileUtils.deleteDir(sdkDir);
-                            sdkDir.mkdir();
-                        }
+                        removeOldDB();
 
                         long currentTime = SystemClock.elapsedRealtime();
                         dbCreator = new FaceDbHelper(getApplicationContext());
@@ -137,6 +135,14 @@ public class DbControlActivity extends Activity {
 
                         Log.i(TAG,"cost Time:"+(SystemClock.elapsedRealtime()-currentTime));
                         Toast.makeText(DbControlActivity.this, "dbCreate", Toast.LENGTH_SHORT).show();
+
+                        Log.d("zhf_face","创建数据库完成，请开始执行添加....");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mResultTv.setText("创建数据库完成，请开始执行添加....");
+                            }
+                        });
                     }
                 });
             }
@@ -144,6 +150,9 @@ public class DbControlActivity extends Activity {
         db_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                db_create.setEnabled(false);
+                db_add.setEnabled(false);
+
                 mH.post(new Runnable() {
                     @Override
                     public void run() {
@@ -173,13 +182,13 @@ public class DbControlActivity extends Activity {
 
                             if (userFace == null || userFace.faceDO == null || userFace.userInfo == null) {
                                 error++;
-                                Log.e("zhf_face","RokidHttp ##### 批量添加: "+fileName+" 出错啦, 检测不到人脸");
+                                Log.e("zhf_face","RokidFace ##### 批量添加: "+fileName+" 出错啦, 检测不到人脸");
                                 continue;
                             }
 
                             FaceDO faceDO = userFace.faceDO;
                             Rect srcRect = faceDO.toRect(photo.getWidth(), photo.getHeight());
-                            Log.d("zhf_face","RokidHttp ##### 批量 fileName= "+file.getAbsolutePath()
+                            Log.d("zhf_face","RokidFace ##### 批量 fileName= "+file.getAbsolutePath()
                                     +", count="+(count++)+", faceDO srcRect="+srcRect);
 
                             Rect dstRect = FaceRectUtils.toRect(
@@ -222,7 +231,7 @@ public class DbControlActivity extends Activity {
                             Bitmap cropBitmap = Bitmap.createBitmap(photo, left, top, right - left, bottom - top);
                             if(cropBitmap ==null){
                                 error++;
-                                Log.e("zhf_face","RokidHttp ##### 裁剪: "+fileName+"出错啦");
+                                Log.e("zhf_face","RokidFace ##### 裁剪: "+fileName+"出错啦");
                                 continue;
                             }
 
@@ -270,6 +279,8 @@ public class DbControlActivity extends Activity {
                             @Override
                             public void run() {
                                 mResultTv.setText("添加完成，成功: "+done_success+", 失败: "+done_error);
+                                db_create.setEnabled(true);
+                                db_add.setEnabled(true);
                             }
                         });
 
@@ -356,9 +367,46 @@ public class DbControlActivity extends Activity {
             }
         });
     }
-	
-	
-	
+
+
+    public void removeOldDB() {
+        // 删除sdcard人脸特征库
+        File faceSdk = new File(FaceDbHelper.PATH_OUTPUT);
+        if (faceSdk != null && faceSdk.exists() && faceSdk.isDirectory()) {
+            FileUtils.deleteDirection(faceSdk);
+        }
+
+        // 删除本地data/data下的数据库
+        File userDb = this.getDatabasePath(RokidConfig.Face.FACE_USR_DB);
+        if (userDb != null && userDb.exists()) {
+            userDb.delete();
+        }
+        File featureDb = this.getDatabasePath(RokidConfig.Face.FACE_FEATURE_DB);
+        if (featureDb != null && featureDb.exists()) {
+            featureDb.delete();
+        }
+        File mappingDb = this.getDatabasePath(RokidConfig.Face.FACE_MAPPING_DB);
+        if (mappingDb != null && mappingDb.exists()) {
+            mappingDb.delete();
+        }
+        File searchEngine = this.getDatabasePath(RokidConfig.Face.FACE_SEARCH_ENGINE);
+        if (searchEngine != null && searchEngine.exists()) {
+            searchEngine.delete();
+        }
+
+        File userDbJournal = this.getDatabasePath(RokidConfig.Face.FACE_USR_DB+"-journal");
+        if (userDbJournal != null && userDbJournal.exists()) {
+            userDbJournal.delete();
+        }
+        File featureDbJournal = this.getDatabasePath(RokidConfig.Face.FACE_FEATURE_DB+"-journal");
+        if (featureDbJournal != null && featureDbJournal.exists()) {
+            featureDbJournal.delete();
+        }
+        File mappingDbJournal = this.getDatabasePath(RokidConfig.Face.FACE_MAPPING_DB+"-journal");
+        if (mappingDbJournal != null && mappingDbJournal.exists()) {
+            mappingDbJournal.delete();
+        }
+    }
 
     public boolean zipDatabase() {
         boolean result = true;
